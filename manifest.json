@@ -2,7 +2,7 @@
   "name": "RISE Community Resources",
   "short_name": "RISE Resources",
   "description": "533 NC community resources across 11 service categories.",
-  "start_url": "./community_resources.html",
+  "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#13294B",
   "theme_color": "#13294B",
