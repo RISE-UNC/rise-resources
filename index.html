@@ -939,7 +939,7 @@ function showBulkPreview(){
       statusHtml='<span style="color:#c0392b;font-weight:600;">&#128308; Duplicate</span><br><span style="font-size:.68rem;color:#c0392b;">Matches: '+esc(resources[dup.idx].name)+'</span>';
     } else if(dup){
       statusHtml='<span style="color:#e67e22;font-weight:600;">&#128992; Similar</span><br><span style="font-size:.68rem;color:#e67e22;">Similar to: '+esc(resources[dup.idx].name)+'</span>'+
-        '<br><button onclick="openMergePanel('+i+')" style="margin-top:4px;padding:2px 8px;font-size:.68rem;font-weight:600;border:1px solid #e67e22;border-radius:4px;background:#fff7f0;color:#e67e22;cursor:pointer;font-family:'Inter',sans-serif;">&#9881; Review &amp; Merge</button>';
+        '<br><button onclick="openMergePanel('+i+')" style="margin-top:4px;padding:2px 8px;font-size:.68rem;font-weight:600;border:1px solid #e67e22;border-radius:4px;background:#fff7f0;color:#e67e22;cursor:pointer;font-family:Inter,sans-serif;">&#9881; Review &amp; Merge</button>';
     } else if(hasWarn){
       statusHtml='<span style="color:#b07000;">&#9888; '+esc(warnings.join('; '))+'</span>';
     } else {
