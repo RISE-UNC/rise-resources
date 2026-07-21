@@ -192,6 +192,33 @@ header{background:var(--unc-navy);color:#fff}
 .cat-editor-btn.danger:hover{border-color:#e53e3e;color:#e53e3e}
 .cat-reassign-panel{background:var(--unc-blue-pale);border:1.5px solid var(--unc-blue-light);border-radius:8px;padding:12px 14px;margin-top:6px;display:none}
 .cat-reassign-panel.open{display:block}
+
+/* ── Bulk category reassign ── */
+.bulk-cat-section{margin-bottom:16px}
+.bulk-cat-section h4{font-size:.78rem;font-weight:700;color:var(--unc-navy);margin-bottom:8px;padding-bottom:6px;border-bottom:1.5px solid var(--gray-200)}
+.bulk-res-list{max-height:140px;overflow-y:auto;border:1.5px solid var(--gray-200);border-radius:7px;padding:6px 10px;font-size:.76rem;color:var(--text);background:#fff}
+.bulk-res-item{padding:3px 0;border-bottom:1px solid var(--gray-200);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bulk-res-item:last-child{border-bottom:none}
+/* ── Category manager improvements ── */
+.cat-mgr-row{display:grid;grid-template-columns:14px 1fr auto auto;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--gray-200)}
+.cat-mgr-row:last-child{border-bottom:none}
+.cat-mgr-swatch{width:14px;height:14px;border-radius:50%;flex-shrink:0}
+.cat-mgr-info{min-width:0}
+.cat-mgr-name{font-size:.85rem;font-weight:700;color:var(--unc-navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cat-mgr-count{font-size:.72rem;color:var(--gray-600)}
+.cat-mgr-btns{display:flex;gap:5px;flex-shrink:0}
+.cat-mgr-btn{padding:3px 9px;font-size:.71rem;font-weight:600;border-radius:5px;border:1.5px solid var(--gray-200);background:#fff;color:var(--text);cursor:pointer;font-family:Inter,sans-serif;white-space:nowrap;transition:all .12s}
+.cat-mgr-btn:hover{border-color:var(--unc-blue);color:var(--unc-blue)}
+.cat-mgr-btn.danger:hover{border-color:#e53e3e;color:#e53e3e}
+.cat-mgr-inline{background:var(--unc-blue-pale);border:1.5px solid var(--unc-blue-light);border-radius:8px;padding:10px 12px;margin:4px 0 8px;display:none}
+.cat-mgr-inline.open{display:block}
+.cat-mgr-inline-row{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.cat-mgr-inline input,.cat-mgr-inline select{flex:1;min-width:120px;padding:5px 9px;border-radius:6px;border:1.5px solid var(--unc-blue);font-size:.8rem;font-family:Inter,sans-serif;outline:none}
+.cat-mgr-inline .apply-btn{padding:5px 14px;border-radius:6px;border:none;background:var(--unc-navy);color:#fff;font-size:.78rem;font-weight:600;cursor:pointer;white-space:nowrap}
+.cat-mgr-inline .cancel-btn{padding:5px 10px;border-radius:6px;border:1.5px solid var(--gray-200);background:#fff;font-size:.78rem;cursor:pointer}
+.cat-mgr-merge-targets{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.merge-target-btn{padding:3px 10px;font-size:.74rem;border-radius:12px;border:1.5px solid var(--gray-200);background:#fff;cursor:pointer;font-family:Inter,sans-serif;transition:all .12s}
+.merge-target-btn:hover{border-color:var(--unc-blue);background:var(--unc-blue-pale);color:var(--unc-blue)}
 </style>
 </head>
 <body>
@@ -212,6 +239,7 @@ header{background:var(--unc-navy);color:#fff}
     <div class="header-actions">
       <button class="btn btn-outline" onclick="printPage()">&#128424; Print All</button>
       <button class="btn btn-outline" onclick="exportPDF()">&#8659; Export PDF</button>
+      <button class="btn btn-outline" onclick="openCatManagerDirect()" style="background:rgba(255,255,255,.12);color:#fff;border-color:rgba(255,255,255,.3);">&#9881; Category Manager</button>
       <button class="btn btn-blue" onclick="openAddModal()">&#43; Add Resource</button>
     </div>
   </div>
@@ -258,6 +286,7 @@ header{background:var(--unc-navy);color:#fff}
     <div class="sel-count" id="selCount"><span>0</span> selected</div>
     <button class="btn-sm btn-sm-ghost" onclick="selectAll()">&#9745; Select All Visible</button>
     <button class="btn-sm btn-sm-ghost" onclick="deselectAll()">&#9744; Deselect All</button>
+    <button class="btn-sm btn-sm-ghost" onclick="openBulkCatAssign()" style="background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.35);">&#127991; Change Categories</button>
     <button class="btn-sm btn-sm-blue" onclick="printSelected()">&#128424; Print</button>
     <button class="btn-sm btn-sm-blue" onclick="exportSelectedPDF()">&#8659; PDF</button>
     <button class="btn-sm btn-sm-red" onclick="deselectAll()">&#10005;</button>
@@ -368,7 +397,14 @@ header{background:var(--unc-navy);color:#fff}
 
         <!-- Preview table -->
         <div id="bulkPreviewWrap" style="display:none;margin-top:14px;">
-          <div style="font-size:.78rem;font-weight:700;color:var(--unc-navy);margin-bottom:6px;">Preview — <span id="bulkPreviewCount"></span> resources found <span style="font-weight:400;color:var(--gray-400);">(scroll to review before importing)</span></div>
+          <div style="font-size:.78rem;font-weight:700;color:var(--unc-navy);margin-bottom:8px;">Preview — <span id="bulkPreviewCount"></span> resources found <span style="font-weight:400;color:var(--gray-400);">(scroll to review before importing)</span></div>
+          <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:10px;padding:9px 12px;background:#f8fbff;border-radius:7px;border:1px solid var(--gray-200);font-size:.72rem;color:var(--gray-600);">
+            <span style="font-weight:700;color:var(--unc-navy);margin-right:2px;">What gets imported:</span>
+            <span>&#9989; <strong style="color:#2a9d5c;">New</strong> — will be added</span>
+            <span>&#9888; <strong style="color:#b07000;">Warning</strong> — will be added (review data quality after import)</span>
+            <span>&#128992; <strong style="color:#e67e22;">Similar</strong> — skipped by "Import New Only"; use Review &amp; Merge to decide</span>
+            <span>&#128308; <strong style="color:#c0392b;">Duplicate</strong> — skipped by "Import New Only"</span>
+          </div>
           <div style="max-height:220px;overflow-y:auto;border:1.5px solid var(--gray-200);border-radius:7px;">
             <table id="bulkPreviewTable" style="width:100%;border-collapse:collapse;font-size:.73rem;">
               <thead style="position:sticky;top:0;background:var(--unc-navy);color:#fff;">
@@ -398,17 +434,22 @@ header{background:var(--unc-navy);color:#fff}
     </div>
 
 
-    <!-- PANEL 4: Category editor -->
+    <!-- PANEL 4: Category Manager -->
     <div id="panel-catEditor" style="display:none;">
       <div class="modal-header">
         <div style="display:flex;align-items:center;gap:10px;">
-          <button onclick="showPanel('choose')" style="background:none;border:none;cursor:pointer;color:var(--gray-400);font-size:1.1rem;padding:2px 6px;border-radius:5px;" title="Back">&#8592;</button>
-          <h3>Manage Categories</h3>
+          <button id="catMgrBackBtn" onclick="showPanel('choose')" style="background:none;border:none;cursor:pointer;color:var(--gray-400);font-size:1.1rem;padding:2px 6px;border-radius:5px;" title="Back">&#8592;</button>
+          <h3>&#9881; Category Manager</h3>
         </div>
         <button class="modal-close" onclick="closeModal()">&times;</button>
       </div>
       <div class="modal-body" style="max-height:68vh;overflow-y:auto;">
-        <p style="font-size:.78rem;color:var(--gray-600);margin-bottom:14px;">Rename, merge, or delete categories. Changes apply to all resources in that category.</p>
+        <p style="font-size:.78rem;color:var(--gray-600);margin-bottom:12px;">
+          Rename, merge, or delete categories. <strong>All changes apply instantly to every resource in that category</strong> — no need to edit resources one by one.
+        </p>
+        <div style="background:#fffbe6;border:1.5px solid #e6c84a;border-radius:7px;padding:9px 12px;font-size:.74rem;color:#7a6000;margin-bottom:14px;">
+          <strong>&#128161; Tip:</strong> To fix redundant categories like "Utilities", "Financial/Utilities", and "Financial/Housing/Utilities" — use <strong>Merge into…</strong> to combine them into one. Resources keep all their other categories.
+        </div>
         <div id="catEditorList"></div>
         <div style="margin-top:18px;padding-top:14px;border-top:1.5px solid var(--gray-200);">
           <div style="font-size:.78rem;font-weight:700;color:var(--unc-navy);margin-bottom:8px;">&#43; Add New Category</div>
@@ -418,8 +459,55 @@ header{background:var(--unc-navy);color:#fff}
           </div>
         </div>
       </div>
-      <div class="modal-footer" style="justify-content:flex-end;">
+      <div class="modal-footer" style="justify-content:flex-end;gap:8px;">
         <button class="btn btn-cancel" onclick="closeModal()">Done</button>
+      </div>
+    </div>
+
+    <!-- PANEL 5: Bulk category assign (for selected resources) -->
+    <div id="panel-bulkCat" style="display:none;">
+      <div class="modal-header">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <button onclick="closeModal()" style="background:none;border:none;cursor:pointer;color:var(--gray-400);font-size:1.1rem;padding:2px 6px;border-radius:5px;" title="Close">&#10005;</button>
+          <h3>&#127991; Change Categories for Selected Resources</h3>
+        </div>
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+      </div>
+      <div class="modal-body" style="max-height:68vh;overflow-y:auto;">
+        <div class="bulk-cat-section">
+          <h4>Selected resources (<span id="bulkCatResCount">0</span>)</h4>
+          <div class="bulk-res-list" id="bulkCatResList"></div>
+        </div>
+        <div class="bulk-cat-section">
+          <h4>Choose action</h4>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <label style="display:flex;align-items:center;gap:8px;font-size:.82rem;cursor:pointer;">
+              <input type="radio" name="bulkCatMode" value="add" checked onchange="renderBulkCatOptions()"> <strong>Add</strong> these categories to selected resources (keeps existing)
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;font-size:.82rem;cursor:pointer;">
+              <input type="radio" name="bulkCatMode" value="replace" onchange="renderBulkCatOptions()"> <strong>Replace</strong> all categories on selected resources with chosen ones
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;font-size:.82rem;cursor:pointer;">
+              <input type="radio" name="bulkCatMode" value="remove" onchange="renderBulkCatOptions()"> <strong>Remove</strong> these categories from selected resources
+            </label>
+          </div>
+        </div>
+        <div class="bulk-cat-section">
+          <h4 id="bulkCatPickLabel">Categories to add</h4>
+          <div class="cat-check-grid" id="bulkCatGrid"></div>
+          <div class="new-cat-row" id="bulkCatNewRow">
+            <input type="text" id="bulkCatNewInput" placeholder="Or type a new category…" onkeydown="if(event.key==='Enter'){event.preventDefault();addNewCatFromBulk()}">
+            <button onclick="addNewCatFromBulk()">Add</button>
+          </div>
+        </div>
+        <div id="bulkCatPreview" style="font-size:.75rem;color:var(--gray-600);padding:8px 10px;background:var(--unc-blue-pale);border-radius:6px;margin-top:4px;display:none;"></div>
+      </div>
+      <div class="modal-footer" style="justify-content:space-between;align-items:center;">
+        <span style="font-size:.74rem;color:var(--gray-600);" id="bulkCatNote"></span>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-cancel" onclick="closeModal()">Cancel</button>
+          <button class="btn btn-save" onclick="applyBulkCatChange()">&#10003; Apply to All Selected</button>
+        </div>
       </div>
     </div>
 
@@ -725,6 +813,11 @@ function renderAll(){
   const hasFilters=activeCats.size||activeCounties.size||document.getElementById('searchInput').value.trim();
   document.getElementById('clearBtn').style.display=hasFilters?'':'none';
   document.getElementById('resultsCount').innerHTML='Showing <strong>'+filtered.length+'</strong> of <strong>'+resources.length+'</strong> resources';
+  // Update header with live resource count and county count
+  const allCounties=getAllCounties();
+  document.getElementById('headerCount').innerHTML=
+    '<strong>'+resources.length+'</strong> resources &middot; '+
+    '<strong>'+allCounties.length+'</strong> '+(allCounties.length===1?'county':'counties')+' served &middot; North Carolina';
   if(!filtered.length){container.innerHTML='<div class="empty-state"><svg width="44" height="44" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg><p>No resources match your filters</p><small>Try adjusting your search or clearing the filters</small></div>';return;}
   const grouped={};
   filtered.forEach(({r,origIdx})=>{
@@ -868,14 +961,14 @@ function showToast(msg){const t=document.getElementById('toast');t.textContent=m
 
 // ── PANEL NAVIGATION ────────────────────────────────────────────────────────
 function showPanel(name){
-  ['choose','single','bulk','merge','catEditor'].forEach(p=>{
+  ['choose','single','bulk','merge','catEditor','bulkCat'].forEach(p=>{
     document.getElementById('panel-'+p).style.display = p===name ? '' : 'none';
   });
   if(name==='bulk') resetBulkPanel();
 }
 // Returns to bulk preview WITHOUT resetting it (used after merge actions)
 function returnToBulkPreview(){
-  ['choose','single','bulk','merge','catEditor'].forEach(p=>{
+  ['choose','single','bulk','merge','catEditor','bulkCat'].forEach(p=>{
     document.getElementById('panel-'+p).style.display = p==='bulk' ? '' : 'none';
   });
 }
@@ -1081,10 +1174,7 @@ function importBulkResources(newOnly){
     if(newOnly&&duplicate){dupsSkipped++;return;}
     // Normalize category field for bulk imports
     if(!r.categories){ r.categories = r.category ? [r.category] : []; delete r.category; }
-    if(r.categories.length){ r.categories.forEach(cat=>{if(!CAT_COLORS[cat]){getCatColor(cat);saveCategories();}}); }
-    // Normalize category field for bulk imports
-    if(!r.categories){ r.categories = r.category ? [r.category] : []; delete r.category; }
-    if(r.categories.length){ r.categories.forEach(cat=>{if(!CAT_COLORS[cat]){getCatColor(cat);saveCategories();}}); }
+    r.categories.forEach(cat=>{if(!CAT_COLORS[cat]){getCatColor(cat);saveCategories();}});
     resources.push(r);added++;
   });
   saveToStorage();
@@ -1271,43 +1361,14 @@ function addNewCatFromForm(){
 // Open the category editor modal
 function openCatEditor(){
   buildCatEditorList();
+  // Show back button — user came from choose panel
+  const backBtn = document.getElementById('catMgrBackBtn');
+  if(backBtn) backBtn.style.display = '';
   showPanel('catEditor');
   document.getElementById('modalOverlay').classList.add('open');
 }
 
-// Build the list of categories in the editor panel
-function buildCatEditorList(){
-  const list = document.getElementById('catEditorList');
-  list.innerHTML = '';
-  const counts = {};
-  resources.forEach(r=>{ getResCats(r).forEach(c=>{ counts[c]=(counts[c]||0)+1; }); });
-  getCatOrder().forEach(cat=>{
-    const color = getCatColor(cat);
-    const count = counts[cat]||0;
-    const row = document.createElement('div');
-    row.className = 'cat-editor-row';
-    row.id = 'cer-'+btoa(encodeURIComponent(cat)).replace(/=/g,'');
-    row.innerHTML =
-      '<div class="cat-editor-swatch" style="background:'+color+'"></div>'+
-      '<div class="cat-editor-name">'+esc(cat)+'</div>'+
-      '<div class="cat-editor-count">'+count+' resource'+(count!==1?'s':'')+'</div>'+
-      '<div class="cat-editor-actions">'+
-        '<button class="cat-editor-btn cer-rename">&#9998; Rename</button>'+
-        '<button class="cat-editor-btn cer-merge">&#8652; Merge into…</button>'+
-        '<button class="cat-editor-btn danger cer-delete"'+
-          (count>0?' title="Removes from all '+count+' resource(s)"':'')+
-        '>&#10005; Delete</button>'+
-      '</div>';
-    row.querySelector('.cer-rename').onclick = (function(c){ return function(){ startRenameCategory(c); }; })(cat);
-    row.querySelector('.cer-merge').onclick  = (function(c){ return function(){ startMergeCategory(c); }; })(cat);
-    row.querySelector('.cer-delete').onclick = (function(c){ return function(){ deleteCategory(c); }; })(cat);
-    list.appendChild(row);
-    const extra = document.createElement('div');
-    extra.id = 'cerx-'+btoa(encodeURIComponent(cat)).replace(/=/g,'');
-    extra.className = 'cat-reassign-panel';
-    list.appendChild(extra);
-  });
-}
+// buildCatEditorList moved to Category Manager section above
 // Add a new category from within the editor
 function addCategoryFromEditor(){
   const input = document.getElementById('newCatName');
@@ -1322,26 +1383,7 @@ function addCategoryFromEditor(){
 }
 
 // Rename a category across all resources
-function startRenameCategory(cat){
-  const key = btoa(encodeURIComponent(cat)).replace(/=/g,'');
-  const panel = document.getElementById('cerx-'+key);
-  const inp = document.createElement('input');
-  inp.type='text'; inp.value=cat;
-  inp.style.cssText='flex:1;padding:5px 9px;border-radius:6px;border:1.5px solid var(--unc-blue);font-size:.8rem;font-family:Inter,sans-serif;outline:none;';
-  const applyBtn = document.createElement('button');
-  applyBtn.textContent='Apply';
-  applyBtn.style.cssText='padding:5px 12px;border-radius:6px;border:none;background:var(--unc-navy);color:#fff;font-size:.78rem;font-weight:600;cursor:pointer;';
-  const cancelBtn = document.createElement('button');
-  cancelBtn.textContent='Cancel';
-  cancelBtn.style.cssText='padding:5px 9px;border-radius:6px;border:1.5px solid var(--gray-200);background:#fff;font-size:.78rem;cursor:pointer;';
-  const wrap = document.createElement('div');
-  wrap.style.cssText='display:flex;gap:6px;align-items:center;';
-  wrap.appendChild(inp); wrap.appendChild(applyBtn); wrap.appendChild(cancelBtn);
-  panel.innerHTML=''; panel.appendChild(wrap); panel.classList.add('open');
-  applyBtn.onclick = ()=>applyRename(cat, inp.value.trim());
-  cancelBtn.onclick = buildCatEditorList;
-  inp.focus(); inp.select();
-}
+// startRenameCategory replaced by toggleCatMgrInline
 
 function applyRename(oldCat, newCat){
   if(!newCat) newCat = oldCat;
@@ -1364,28 +1406,7 @@ function applyRename(oldCat, newCat){
 }
 
 // Merge one category into another
-function startMergeCategory(cat){
-  const key = btoa(encodeURIComponent(cat)).replace(/=/g,'');
-  const panel = document.getElementById('cerx-'+key);
-  const others = getCatOrder().filter(c=>c!==cat);
-  const sel = document.createElement('select');
-  sel.style.cssText='flex:1;padding:5px 9px;border-radius:6px;border:1.5px solid var(--unc-blue);font-size:.8rem;font-family:Inter,sans-serif;outline:none;';
-  others.forEach(c=>{ const o=document.createElement('option'); o.value=c; o.textContent=c; sel.appendChild(o); });
-  const mergeBtn = document.createElement('button');
-  mergeBtn.textContent='Merge';
-  mergeBtn.style.cssText='padding:5px 12px;border-radius:6px;border:none;background:var(--unc-navy);color:#fff;font-size:.78rem;font-weight:600;cursor:pointer;';
-  const cancelBtn = document.createElement('button');
-  cancelBtn.textContent='Cancel';
-  cancelBtn.style.cssText='padding:5px 9px;border-radius:6px;border:1.5px solid var(--gray-200);background:#fff;font-size:.78rem;cursor:pointer;';
-  const lbl = document.createElement('span');
-  lbl.textContent='Move all into:'; lbl.style.cssText='font-size:.78rem;color:var(--gray-600);white-space:nowrap;';
-  const wrap = document.createElement('div');
-  wrap.style.cssText='display:flex;gap:6px;align-items:center;';
-  wrap.appendChild(lbl); wrap.appendChild(sel); wrap.appendChild(mergeBtn); wrap.appendChild(cancelBtn);
-  panel.innerHTML=''; panel.appendChild(wrap); panel.classList.add('open');
-  mergeBtn.onclick = ()=>applyMergeCategory(cat, sel.value);
-  cancelBtn.onclick = buildCatEditorList;
-}
+// startMergeCategory replaced by toggleCatMgrInline
 
 function applyMergeCategory(fromCat, toCat){
   resources.forEach(r=>{
@@ -1420,6 +1441,237 @@ function deleteCategory(cat){
   buildDropdowns();buildCategoryChips();renderAll();
   buildCatEditorList();
   showToast('Deleted category "'+cat+'".');
+}
+
+// ── CATEGORY MANAGER (direct open from header, no back-to-choose) ─────────────
+function openCatManagerDirect(){
+  buildCatEditorList();
+  // Hide back button — user came from header, not Add Resource modal
+  document.getElementById('catMgrBackBtn').style.display = 'none';
+  showPanel('catEditor');
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+// ── REBUILT buildCatEditorList — cleaner UI ───────────────────────────────────
+function buildCatEditorList(){
+  // Restore back button default visibility
+  const backBtn = document.getElementById('catMgrBackBtn');
+  if(backBtn) backBtn.style.display = '';
+
+  const list = document.getElementById('catEditorList');
+  list.innerHTML = '';
+  const counts = {};
+  resources.forEach(r=>{ getResCats(r).forEach(c=>{ counts[c]=(counts[c]||0)+1; }); });
+  const order = getCatOrder();
+
+  order.forEach(cat=>{
+    const color = getCatColor(cat);
+    const count = counts[cat]||0;
+
+    // Main row
+    const row = document.createElement('div');
+    row.className = 'cat-mgr-row';
+
+    const swatch = document.createElement('div');
+    swatch.className = 'cat-mgr-swatch';
+    swatch.style.background = color;
+
+    const info = document.createElement('div');
+    info.className = 'cat-mgr-info';
+    info.innerHTML = '<div class="cat-mgr-name">'+esc(cat)+'</div><div class="cat-mgr-count">'+count+' resource'+(count!==1?'s':'')+'</div>';
+
+    const btns = document.createElement('div');
+    btns.className = 'cat-mgr-btns';
+
+    const renameBtn = document.createElement('button');
+    renameBtn.className = 'cat-mgr-btn';
+    renameBtn.innerHTML = '&#9998; Rename';
+    renameBtn.onclick = (function(c){ return function(){ toggleCatMgrInline(c,'rename'); }; })(cat);
+
+    const mergeBtn = document.createElement('button');
+    mergeBtn.className = 'cat-mgr-btn';
+    mergeBtn.innerHTML = '&#8652; Merge into&hellip;';
+    mergeBtn.onclick = (function(c){ return function(){ toggleCatMgrInline(c,'merge'); }; })(cat);
+
+    const delBtn = document.createElement('button');
+    delBtn.className = 'cat-mgr-btn danger';
+    delBtn.innerHTML = '&#10005; Delete';
+    if(count>0) delBtn.title = 'Removes from '+count+' resource'+(count!==1?'s':'');
+    delBtn.onclick = (function(c){ return function(){ deleteCategory(c); }; })(cat);
+
+    btns.appendChild(renameBtn);
+    btns.appendChild(mergeBtn);
+    btns.appendChild(delBtn);
+    row.appendChild(swatch);
+    row.appendChild(info);
+    row.appendChild(btns);
+    list.appendChild(row);
+
+    // Inline action panel (hidden by default)
+    const inline = document.createElement('div');
+    inline.className = 'cat-mgr-inline';
+    inline.id = 'cmi-'+encodeKey(cat);
+    list.appendChild(inline);
+  });
+}
+
+function encodeKey(cat){ return btoa(encodeURIComponent(cat)).replace(/[^a-zA-Z0-9]/g,''); }
+
+function toggleCatMgrInline(cat, mode){
+  const key = encodeKey(cat);
+  // Close all other inline panels first
+  document.querySelectorAll('.cat-mgr-inline.open').forEach(el=>{
+    if(el.id !== 'cmi-'+key) el.classList.remove('open');
+  });
+  const panel = document.getElementById('cmi-'+key);
+  if(!panel) return;
+  // Toggle
+  if(panel.classList.contains('open') && panel.dataset.mode === mode){
+    panel.classList.remove('open');
+    return;
+  }
+  panel.dataset.mode = mode;
+  panel.innerHTML = '';
+
+  if(mode === 'rename'){
+    const inp = document.createElement('input');
+    inp.type = 'text'; inp.value = cat;
+    inp.placeholder = 'New name…';
+    const applyBtn = document.createElement('button');
+    applyBtn.className = 'apply-btn'; applyBtn.textContent = 'Rename';
+    const cancelBtn = document.createElement('button');
+    cancelBtn.className = 'cancel-btn'; cancelBtn.textContent = 'Cancel';
+    const row = document.createElement('div');
+    row.className = 'cat-mgr-inline-row';
+    row.appendChild(inp); row.appendChild(applyBtn); row.appendChild(cancelBtn);
+    panel.appendChild(row);
+    applyBtn.onclick = ()=>applyRename(cat, inp.value.trim());
+    cancelBtn.onclick = ()=>panel.classList.remove('open');
+    inp.focus(); inp.select();
+    inp.onkeydown = e=>{ if(e.key==='Enter') applyBtn.click(); if(e.key==='Escape') cancelBtn.click(); };
+
+  } else if(mode === 'merge'){
+    const label = document.createElement('div');
+    label.innerHTML = '<strong>Merge "'+esc(cat)+'" into:</strong> <span style="font-size:.73rem;color:var(--gray-600);">All '+(({}[cat]||(resources.filter(r=>getResCats(r).includes(cat)).length))+' resources will move to the chosen category.')+' The "'+esc(cat)+'" category will be removed.</span>';
+    label.style.cssText = 'font-size:.78rem;margin-bottom:8px;';
+    panel.appendChild(label);
+
+    const targets = document.createElement('div');
+    targets.className = 'cat-mgr-merge-targets';
+    getCatOrder().filter(c=>c!==cat).forEach(targetCat=>{
+      const btn = document.createElement('button');
+      btn.className = 'merge-target-btn';
+      const dot = '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+getCatColor(targetCat)+';margin-right:5px;vertical-align:middle;"></span>';
+      btn.innerHTML = dot + esc(targetCat);
+      btn.onclick = (function(from,to){ return function(){
+        if(confirm('Merge "'+from+'" into "'+to+'"? All '+resources.filter(r=>getResCats(r).includes(from)).length+' resources that have "'+from+'" will also be tagged "'+to+'". The "'+from+'" category will be removed.'))
+          applyMergeCategory(from, to);
+      }; })(cat, targetCat);
+      targets.appendChild(btn);
+    });
+    panel.appendChild(targets);
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.className = 'cancel-btn'; cancelBtn.textContent = 'Cancel';
+    cancelBtn.style.cssText = 'margin-top:8px;padding:4px 10px;border-radius:6px;border:1.5px solid var(--gray-200);background:#fff;font-size:.76rem;cursor:pointer;';
+    cancelBtn.onclick = ()=>panel.classList.remove('open');
+    panel.appendChild(cancelBtn);
+  }
+
+  panel.classList.add('open');
+}
+
+// ── BULK CATEGORY ASSIGN (from selection toolbar) ────────────────────────────
+function openBulkCatAssign(){
+  if(!selectedIndices.size){ showToast('⚠ No resources selected.'); return; }
+  const sel = [...selectedIndices].sort((a,b)=>a-b);
+  // Populate resource list
+  document.getElementById('bulkCatResCount').textContent = sel.length;
+  const listEl = document.getElementById('bulkCatResList');
+  listEl.innerHTML = '';
+  sel.forEach(i=>{
+    const d = document.createElement('div');
+    d.className = 'bulk-res-item';
+    d.textContent = resources[i].name + (resources[i].county ? ' · '+resources[i].county : '');
+    listEl.appendChild(d);
+  });
+  // Build category grid
+  renderBulkCatOptions();
+  document.getElementById('bulkCatNote').textContent = '';
+  document.getElementById('bulkCatPreview').style.display = 'none';
+  // Open modal
+  showPanel('bulkCat');
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function renderBulkCatOptions(){
+  const mode = document.querySelector('input[name="bulkCatMode"]:checked')?.value || 'add';
+  const labels = {add:'Categories to add', replace:'Replace with these categories', remove:'Categories to remove'};
+  document.getElementById('bulkCatPickLabel').textContent = labels[mode];
+  // Show/hide "add new category" row only for add/replace modes
+  document.getElementById('bulkCatNewRow').style.display = mode==='remove' ? 'none' : '';
+  // Build checkboxes
+  const grid = document.getElementById('bulkCatGrid');
+  grid.innerHTML = '';
+  getCatOrder().forEach(cat=>{
+    const lbl = document.createElement('label');
+    lbl.className = 'cat-check-label';
+    lbl.dataset.cat = cat;
+    lbl.innerHTML = '<input type="checkbox"> '+esc(cat);
+    lbl.onclick = function(e){ e.preventDefault(); this.classList.toggle('checked'); };
+    grid.appendChild(lbl);
+  });
+  document.getElementById('bulkCatNewInput').value = '';
+}
+
+function addNewCatFromBulk(){
+  const input = document.getElementById('bulkCatNewInput');
+  const name = input.value.trim();
+  if(!name) return;
+  if(!getCatOrder().includes(name)){ getCatColor(name); saveCategories(); }
+  // Add to grid if not there
+  const grid = document.getElementById('bulkCatGrid');
+  let existing = [...grid.querySelectorAll('.cat-check-label')].find(l=>l.dataset.cat===name);
+  if(!existing){
+    const lbl = document.createElement('label');
+    lbl.className = 'cat-check-label checked';
+    lbl.dataset.cat = name;
+    lbl.innerHTML = '<input type="checkbox" checked> '+esc(name);
+    lbl.onclick = function(e){ e.preventDefault(); this.classList.toggle('checked'); };
+    grid.appendChild(lbl);
+  } else {
+    existing.classList.add('checked');
+  }
+  input.value = '';
+}
+
+function applyBulkCatChange(){
+  const mode = document.querySelector('input[name="bulkCatMode"]:checked')?.value || 'add';
+  const chosen = [...document.querySelectorAll('#bulkCatGrid .cat-check-label.checked')].map(l=>l.dataset.cat);
+  if(!chosen.length){ showToast('⚠ Select at least one category.'); return; }
+  const sel = [...selectedIndices];
+  let changed = 0;
+  sel.forEach(i=>{
+    const r = resources[i];
+    let cats = [...getResCats(r)];
+    if(mode==='add'){
+      chosen.forEach(c=>{ if(!cats.includes(c)) cats.push(c); });
+    } else if(mode==='replace'){
+      cats = [...chosen];
+    } else if(mode==='remove'){
+      cats = cats.filter(c=>!chosen.includes(c));
+    }
+    r.categories = cats;
+    delete r.category;
+    changed++;
+  });
+  // Register any new categories
+  chosen.forEach(cat=>{ if(!CAT_COLORS[cat]){ getCatColor(cat); saveCategories(); } });
+  saveToStorage();
+  buildDropdowns(); buildCategoryChips(); renderAll();
+  closeModal();
+  const modeLabel = {add:'added to', replace:'set on', remove:'removed from'}[mode];
+  showToast('✅ Categories '+modeLabel+' '+changed+' resource'+(changed!==1?'s':'')+'.');
 }
 
 document.getElementById('clearBtn').style.display='none';
