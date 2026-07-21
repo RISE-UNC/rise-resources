@@ -379,10 +379,10 @@ header{background:var(--unc-navy);color:#fff}
     <div id="panel-merge" style="display:none;">
       <div class="modal-header">
         <div style="display:flex;align-items:center;gap:10px;">
-          <button onclick="showPanel('bulk')" style="background:none;border:none;cursor:pointer;color:var(--gray-400);font-size:1.1rem;padding:2px 6px;border-radius:5px;" title="Back">&#8592;</button>
+          <button onclick="returnToBulkPreview()" style="background:none;border:none;cursor:pointer;color:var(--gray-400);font-size:1.1rem;padding:2px 6px;border-radius:5px;" title="Back">&#8592;</button>
           <h3>Review &amp; Merge Similar Resource</h3>
         </div>
-        <button class="modal-close" onclick="showPanel('bulk')">&times;</button>
+        <button class="modal-close" onclick="returnToBulkPreview()">&times;</button>
       </div>
       <div class="modal-body" style="max-height:65vh;overflow-y:auto;">
         <p style="font-size:.78rem;color:var(--gray-600);margin-bottom:14px;">The incoming resource is similar to one already in your database. Compare them side by side, edit the merged result if needed, then choose an action.</p>
@@ -781,6 +781,12 @@ function showPanel(name){
   });
   if(name==='bulk') resetBulkPanel();
 }
+// Returns to bulk preview WITHOUT resetting it (used after merge actions)
+function returnToBulkPreview(){
+  ['choose','single','bulk','merge'].forEach(p=>{
+    document.getElementById('panel-'+p).style.display = p==='bulk' ? '' : 'none';
+  });
+}
 
 // ── MODAL OPEN ───────────────────────────────────────────────────────────────
 function openAddModal(){
@@ -1116,7 +1122,8 @@ function mergeAction(action){
     }
   }
 
-  showPanel('bulk');
+  // Return to preview without resetting it so the user can continue reviewing
+  returnToBulkPreview();
 }
 
 document.getElementById('clearBtn').style.display='none';
