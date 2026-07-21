@@ -885,7 +885,7 @@ function openAddModal(){
   editIndex=null;
   document.getElementById('modalTitle').textContent='Add Resource';
   buildCatCheckGrid([]);
-  ['name','category','summary','eligibility','county','phone','address','website'].forEach(f=>document.getElementById('f-'+f).value='');
+  ['name','summary','eligibility','county','phone','address','website'].forEach(f=>{const el=document.getElementById('f-'+f);if(el)el.value='';});
   showPanel('choose');
   document.getElementById('modalOverlay').classList.add('open');
 }
