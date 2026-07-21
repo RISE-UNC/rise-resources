@@ -115,6 +115,24 @@ header{background:var(--unc-navy);color:#fff}
 .empty-state small{font-size:.83rem}
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(19,41,75,.55);z-index:1000;align-items:center;justify-content:center;padding:20px}
 .modal-overlay.open{display:flex}
+.merge-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.merge-card{border-radius:8px;border:2px solid var(--gray-200);padding:13px 14px;font-size:.79rem}
+.merge-card.existing{border-color:#4B9CD3;background:#f0f8fd}
+.merge-card.incoming{border-color:#e67e22;background:#fff7f0}
+.merge-card h4{font-size:.78rem;font-weight:700;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--gray-200)}
+.merge-card h4.existing-label{color:#1a6fa8}
+.merge-card h4.incoming-label{color:#e67e22}
+.merge-field{margin-bottom:6px;line-height:1.5}
+.merge-field .mf-label{font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--gray-400);display:block;margin-bottom:1px}
+.merge-field .mf-val{color:var(--text)}
+.merge-field .mf-val.differs{color:#c0392b;font-weight:600}
+.merge-result{background:var(--unc-blue-pale);border:2px solid var(--unc-blue-light);border-radius:8px;padding:13px 14px;margin-bottom:14px}
+.merge-result h4{font-size:.78rem;font-weight:700;color:var(--unc-navy);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--unc-blue-light)}
+.merge-result-field{display:grid;grid-template-columns:90px 1fr;gap:6px;margin-bottom:5px;align-items:start;font-size:.79rem}
+.merge-result-field .mrf-label{font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--gray-600);padding-top:2px}
+.merge-result-field input,.merge-result-field textarea{width:100%;padding:5px 8px;border-radius:6px;border:1.5px solid var(--gray-200);font-size:.79rem;font-family:'Inter',sans-serif;color:var(--text);outline:none}
+.merge-result-field input:focus,.merge-result-field textarea:focus{border-color:var(--unc-blue)}
+.merge-result-field textarea{min-height:48px;resize:vertical}
 .modal{background:#fff;border-radius:14px;width:100%;max-width:580px;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow-lg)}
 .modal-header{padding:18px 22px 14px;border-bottom:1px solid var(--gray-200);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:#fff;z-index:1;border-radius:14px 14px 0 0}
 .modal-header h3{font-size:1rem;font-weight:700;color:var(--unc-navy)}
@@ -352,6 +370,56 @@ header{background:var(--unc-navy);color:#fff}
           <button class="btn btn-cancel" onclick="closeModal()">Cancel</button>
           <button class="btn" id="bulkImportNewBtn" onclick="importBulkResources(true)" style="display:none;background:var(--gray-100);color:var(--unc-navy);border:1.5px solid var(--gray-200);">⬇ Import New Only</button>
           <button class="btn btn-save" id="bulkImportBtn" onclick="importBulkResources(false)" style="display:none;">⬇ Import All</button>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- PANEL 3: Merge comparison -->
+    <div id="panel-merge" style="display:none;">
+      <div class="modal-header">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <button onclick="showPanel('bulk')" style="background:none;border:none;cursor:pointer;color:var(--gray-400);font-size:1.1rem;padding:2px 6px;border-radius:5px;" title="Back">&#8592;</button>
+          <h3>Review &amp; Merge Similar Resource</h3>
+        </div>
+        <button class="modal-close" onclick="showPanel('bulk')">&times;</button>
+      </div>
+      <div class="modal-body" style="max-height:65vh;overflow-y:auto;">
+        <p style="font-size:.78rem;color:var(--gray-600);margin-bottom:14px;">The incoming resource is similar to one already in your database. Compare them side by side, edit the merged result if needed, then choose an action.</p>
+        <div class="merge-grid">
+          <div class="merge-card existing">
+            <h4 class="existing-label">&#128204; Existing (in database)</h4>
+            <div id="mergeExistingFields"></div>
+          </div>
+          <div class="merge-card incoming">
+            <h4 class="incoming-label">&#128992; Incoming (from file)</h4>
+            <div id="mergeIncomingFields"></div>
+          </div>
+        </div>
+        <div class="merge-result">
+          <h4>&#9997;&#65039; Merged Result — edit any field before saving</h4>
+          <div class="merge-result-field"><span class="mrf-label">Name</span><input type="text" id="mr-name"></div>
+          <div class="merge-result-field"><span class="mrf-label">Category</span>
+            <select id="mr-category" style="padding:5px 8px;border-radius:6px;border:1.5px solid var(--gray-200);font-size:.79rem;font-family:'Inter',sans-serif;color:var(--text);outline:none;width:100%;">
+              <option>Food</option><option>Housing/Furniture</option><option>Transportation</option>
+              <option>Utilities</option><option>Interpersonal/DV</option><option>Caregiving/Family</option>
+              <option>Medical</option><option>Mental/Substance Use</option><option>Eye Care</option><option>Dental</option>
+            </select>
+          </div>
+          <div class="merge-result-field"><span class="mrf-label">County</span><input type="text" id="mr-county"></div>
+          <div class="merge-result-field"><span class="mrf-label">Summary</span><textarea id="mr-summary"></textarea></div>
+          <div class="merge-result-field"><span class="mrf-label">Eligibility</span><textarea id="mr-eligibility" style="min-height:36px;"></textarea></div>
+          <div class="merge-result-field"><span class="mrf-label">Address</span><input type="text" id="mr-address"></div>
+          <div class="merge-result-field"><span class="mrf-label">Phone</span><input type="text" id="mr-phone"></div>
+          <div class="merge-result-field"><span class="mrf-label">Website</span><input type="text" id="mr-website"></div>
+        </div>
+      </div>
+      <div class="modal-footer" style="justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+        <span id="mergeFooterNote" style="font-size:.73rem;color:var(--gray-600);"></span>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn" onclick="mergeAction('skip')" style="background:var(--gray-100);color:var(--gray-600);border:1.5px solid var(--gray-200);">&#10005; Skip Incoming</button>
+          <button class="btn" onclick="mergeAction('keep-both')" style="background:var(--gray-100);color:var(--unc-navy);border:1.5px solid var(--gray-200);">&#43; Keep Both</button>
+          <button class="btn btn-save" onclick="mergeAction('merge')">&#10003; Save Merged</button>
         </div>
       </div>
     </div>
@@ -855,7 +923,8 @@ function showBulkPreview(){
     if(isExact){
       statusHtml='<span style="color:#c0392b;font-weight:600;">&#128308; Duplicate</span><br><span style="font-size:.68rem;color:#c0392b;">Matches: '+esc(resources[dup.idx].name)+'</span>';
     } else if(dup){
-      statusHtml='<span style="color:#e67e22;font-weight:600;">&#128992; Similar</span><br><span style="font-size:.68rem;color:#e67e22;">Similar to: '+esc(resources[dup.idx].name)+'</span>';
+      statusHtml='<span style="color:#e67e22;font-weight:600;">&#128992; Similar</span><br><span style="font-size:.68rem;color:#e67e22;">Similar to: '+esc(resources[dup.idx].name)+'</span>'+
+        '<br><button onclick="openMergePanel('+i+')" style="margin-top:4px;padding:2px 8px;font-size:.68rem;font-weight:600;border:1px solid #e67e22;border-radius:4px;background:#fff7f0;color:#e67e22;cursor:pointer;font-family:'Inter',sans-serif;">&#9881; Review &amp; Merge</button>';
     } else if(hasWarn){
       statusHtml='<span style="color:#b07000;">&#9888; '+esc(warnings.join('; '))+'</span>';
     } else {
@@ -888,9 +957,13 @@ function showBulkPreview(){
 // ── IMPORT ────────────────────────────────────────────────────────────────────
 function importBulkResources(newOnly){
   if(!bulkParsed.length)return;
-  let added=0,skipped=0,dupsSkipped=0;
-  bulkParsed.forEach(({r,duplicate})=>{
+  let added=0,skipped=0,dupsSkipped=0,merged=0;
+  bulkParsed.forEach(entry=>{
+    const{r,duplicate}=entry;
     if(!r.name){skipped++;return;}
+    if(entry.mergeDecision==='merged'){merged++;return;} // already applied
+    if(entry.mergeDecision==='skip'){skipped++;return;}
+    if(entry.mergeDecision==='keep-both'){resources.push(r);added++;return;}
     if(newOnly&&duplicate){dupsSkipped++;return;}
     resources.push(r);added++;
   });
@@ -898,8 +971,9 @@ function importBulkResources(newOnly){
   closeModal();
   buildDropdowns();buildCategoryChips();renderAll();
   let msg='&#9989; Imported '+added+' resource'+(added!==1?'s':'');
-  if(dupsSkipped) msg+=' ('+dupsSkipped+' duplicate'+(dupsSkipped!==1?'s':'')+' skipped)';
-  if(skipped) msg+=' ('+skipped+' blank rows skipped)';
+  if(merged) msg+=', '+merged+' merged';
+  if(dupsSkipped) msg+=', '+dupsSkipped+' duplicate'+(dupsSkipped!==1?'s':'')+' skipped';
+  if(skipped) msg+=', '+skipped+' blank';
   msg+='!';
   showToast(msg);
 }
@@ -918,11 +992,123 @@ function downloadTemplate(){
   showToast('✅ Template downloaded!');
 }
 
+
+// ── MERGE PANEL ────────────────────────────────────────────────────────────
+let mergeEntryIndex = null; // index in bulkParsed
+
+function openMergePanel(entryIdx){
+  mergeEntryIndex = entryIdx;
+  const entry = bulkParsed[entryIdx];
+  const incoming = entry.r;
+  const existing = resources[entry.duplicate.idx];
+
+  // Build side-by-side comparison fields
+  const FIELDS = [
+    {key:'name',label:'Name'},{key:'category',label:'Category'},
+    {key:'county',label:'County'},{key:'summary',label:'Summary'},
+    {key:'address',label:'Address'},{key:'phone',label:'Phone'},
+    {key:'website',label:'Website'},{key:'eligibility',label:'Eligibility'}
+  ];
+
+  function buildFieldsHtml(r, compareTo){
+    return FIELDS.map(({key,label})=>{
+      const val = r[key]||'';
+      const other = compareTo[key]||'';
+      const differs = val.trim() !== other.trim() && val.trim() !== '';
+      return '<div class="merge-field">'+
+        '<span class="mf-label">'+label+'</span>'+
+        '<span class="mf-val'+(differs?' differs':'')+'">'+esc(val||'—')+'</span>'+
+        '</div>';
+    }).join('');
+  }
+
+  document.getElementById('mergeExistingFields').innerHTML = buildFieldsHtml(existing, incoming);
+  document.getElementById('mergeIncomingFields').innerHTML = buildFieldsHtml(incoming, existing);
+
+  // Pre-fill merged result: prefer non-empty incoming, fall back to existing
+  // For county: merge both
+  const mergedCounty = mergeCounties(existing.county||'', incoming.county||'');
+  document.getElementById('mr-name').value = incoming.name || existing.name || '';
+  document.getElementById('mr-category').value = incoming.category || existing.category || 'Food';
+  document.getElementById('mr-county').value = mergedCounty;
+  document.getElementById('mr-summary').value = incoming.summary || existing.summary || '';
+  document.getElementById('mr-eligibility').value = incoming.eligibility || existing.eligibility || '';
+  document.getElementById('mr-address').value = incoming.address || existing.address || '';
+  document.getElementById('mr-phone').value = incoming.phone || existing.phone || '';
+  document.getElementById('mr-website').value = incoming.website || existing.website || '';
+
+  document.getElementById('mergeFooterNote').innerHTML =
+    '<strong>🟠 Similar to:</strong> '+esc(existing.name)+' ('+esc(existing.county||'unknown county')+')'+
+    '<br><span style="color:var(--gray-400);font-size:.7rem;">County fields have been auto-merged. Edit any field before saving.</span>';
+
+  showPanel('merge');
+}
+
+function mergeCounties(a, b){
+  if(!a) return b;
+  if(!b) return a;
+  const setA = new Set(a.replace(/ and /gi,',').split(',').map(s=>s.trim()).filter(Boolean));
+  const setB = new Set(b.replace(/ and /gi,',').split(',').map(s=>s.trim()).filter(Boolean));
+  setB.forEach(c=>setA.add(c));
+  return [...setA].sort().join(', ');
+}
+
+function mergeAction(action){
+  const entry = bulkParsed[mergeEntryIndex];
+  const existingIdx = entry.duplicate.idx;
+
+  if(action==='skip'){
+    // Mark this entry to be skipped on import
+    entry.mergeDecision = 'skip';
+    showToast('Skipped — incoming resource will not be imported.');
+  } else if(action==='keep-both'){
+    // Remove duplicate flag so it imports as new
+    entry.mergeDecision = 'keep-both';
+    entry.duplicate = null;
+    showToast('Will import as a new separate resource.');
+  } else if(action==='merge'){
+    // Update the existing resource with merged data and mark incoming as skip
+    resources[existingIdx] = {
+      name: document.getElementById('mr-name').value.trim(),
+      category: document.getElementById('mr-category').value,
+      county: document.getElementById('mr-county').value.trim(),
+      summary: document.getElementById('mr-summary').value.trim(),
+      eligibility: document.getElementById('mr-eligibility').value.trim(),
+      address: document.getElementById('mr-address').value.trim(),
+      phone: document.getElementById('mr-phone').value.trim(),
+      website: document.getElementById('mr-website').value.trim()
+    };
+    entry.mergeDecision = 'merged';
+    saveToStorage();
+    buildDropdowns(); buildCategoryChips(); renderAll();
+    showToast('\u2713 Existing resource updated with merged data.');
+  }
+
+  // Refresh the preview row styling
+  const tbody = document.getElementById('bulkPreviewBody');
+  const rows = tbody.querySelectorAll('tr');
+  if(rows[mergeEntryIndex]){
+    const row = rows[mergeEntryIndex];
+    if(action==='skip'){
+      row.style.background='#f5f5f5';
+      row.cells[5].innerHTML='<span style="color:var(--gray-400);">&#10005; Skipped</span>';
+    } else if(action==='keep-both'){
+      row.style.background='#f0faf5';
+      row.cells[5].innerHTML='<span style="color:#2a9d5c;font-weight:600;">&#9989; New (keep both)</span>';
+    } else {
+      row.style.background='#e8f4fb';
+      row.cells[5].innerHTML='<span style="color:#1a6fa8;font-weight:600;">&#10003; Merged into existing</span>';
+    }
+  }
+
+  showPanel('bulk');
+}
+
 document.getElementById('clearBtn').style.display='none';
 buildDropdowns();buildCategoryChips();renderAll();
 </script>
 <script>
-if('serviceWorker' in navigator){
+if('serviceWorker' in navigator && location.hostname.includes('github.io')){
   window.addEventListener('load', ()=>{
     navigator.serviceWorker.register('sw.js').then(reg=>{
       console.log('SW registered:', reg.scope);
