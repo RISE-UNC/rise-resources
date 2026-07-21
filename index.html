@@ -435,6 +435,21 @@ const CAT_COLORS = {
   'Medical':'#d04f2e','Mental/Substance Use':'#4B9CD3','Eye Care':'#1a8a7a','Dental':'#b05020'
 };
 const CAT_ORDER = ['Food','Housing/Furniture','Transportation','Utilities','Interpersonal/DV','Caregiving/Family','Medical','Mental/Substance Use','Eye Care','Dental'];
+// Storage version check — clears stale/corrupt data from old app versions
+(function(){
+  try {
+    const stored = localStorage.getItem('riseResources');
+    if (stored !== null) {
+      const parsed = JSON.parse(stored);
+      // If stored value is not a non-empty array, clear it so INITIAL_DATA is used
+      if (!Array.isArray(parsed) || parsed.length === 0) {
+        localStorage.removeItem('riseResources');
+      }
+    }
+  } catch(e) {
+    localStorage.removeItem('riseResources');
+  }
+})();
 let resources = JSON.parse(localStorage.getItem('riseResources')||'null')||[...INITIAL_DATA];
 let selectedIndices = new Set();
 let editIndex = null;
@@ -761,7 +776,7 @@ function showToast(msg){const t=document.getElementById('toast');t.textContent=m
 
 // ── PANEL NAVIGATION ────────────────────────────────────────────────────────
 function showPanel(name){
-  ['choose','single','bulk'].forEach(p=>{
+  ['choose','single','bulk','merge'].forEach(p=>{
     document.getElementById('panel-'+p).style.display = p===name ? '' : 'none';
   });
   if(name==='bulk') resetBulkPanel();
