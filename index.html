@@ -337,7 +337,7 @@ header{background:var(--unc-navy);color:#fff}
                   <th style="padding:6px 8px;text-align:left;font-weight:600;">Category</th>
                   <th style="padding:6px 8px;text-align:left;font-weight:600;">County</th>
                   <th style="padding:6px 8px;text-align:left;font-weight:600;">Phone</th>
-                  <th style="padding:6px 8px;text-align:left;font-weight:600;">⚠</th>
+                  <th style="padding:6px 8px;text-align:left;font-weight:600;">Status</th>
                 </tr>
               </thead>
               <tbody id="bulkPreviewBody"></tbody>
@@ -350,7 +350,8 @@ header{background:var(--unc-navy);color:#fff}
         <span id="bulkFooterNote" style="font-size:.74rem;color:var(--gray-400);"></span>
         <div style="display:flex;gap:8px;">
           <button class="btn btn-cancel" onclick="closeModal()">Cancel</button>
-          <button class="btn btn-save" id="bulkImportBtn" onclick="importBulkResources()" style="display:none;">⬇ Import All</button>
+          <button class="btn" id="bulkImportNewBtn" onclick="importBulkResources(true)" style="display:none;background:var(--gray-100);color:var(--unc-navy);border:1.5px solid var(--gray-200);">⬇ Import New Only</button>
+          <button class="btn btn-save" id="bulkImportBtn" onclick="importBulkResources(false)" style="display:none;">⬇ Import All</button>
         </div>
       </div>
     </div>
@@ -814,41 +815,93 @@ async function parseXLSX(file){
   showBulkPreview();
 }
 
+// ── DUPLICATE DETECTION ───────────────────────────────────────────────────────
+function normName(s){
+  return String(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');
+}
+function findDuplicate(name){
+  const nn=normName(name);
+  for(let i=0;i<resources.length;i++){
+    const rn=normName(resources[i].name);
+    if(!nn||!rn) continue;
+    if(nn===rn) return {idx:i,type:'exact'};
+    const shorter=nn.length<rn.length?nn:rn;
+    const longer=nn.length<rn.length?rn:nn;
+    if(shorter.length>8&&longer.includes(shorter)) return {idx:i,type:'partial'};
+  }
+  return null;
+}
+
 // ── PREVIEW TABLE ─────────────────────────────────────────────────────────────
 function showBulkPreview(){
   if(!bulkParsed.length)return;
   const tbody=document.getElementById('bulkPreviewBody');
   document.getElementById('bulkPreviewCount').textContent=bulkParsed.length;
   tbody.innerHTML='';
-  bulkParsed.forEach(({r,warnings,rowNum},i)=>{
+  let dupCount=0,warnCount=0;
+  bulkParsed.forEach((entry,i)=>{
+    const{r,warnings,rowNum}=entry;
+    const dup=findDuplicate(r.name);
+    entry.duplicate=dup;
+    if(dup) dupCount++;
     const hasWarn=warnings.length>0;
+    if(hasWarn) warnCount++;
+    const isExact=dup&&dup.type==='exact';
+    let bg=i%2===0?'#fff':'#f5faff';
+    if(isExact) bg='#fff0f0';
+    else if(dup) bg='#fff7f0';
+    else if(hasWarn) bg='#fffbe6';
+    let statusHtml='';
+    if(isExact){
+      statusHtml='<span style="color:#c0392b;font-weight:600;">&#128308; Duplicate</span><br><span style="font-size:.68rem;color:#c0392b;">Matches: '+esc(resources[dup.idx].name)+'</span>';
+    } else if(dup){
+      statusHtml='<span style="color:#e67e22;font-weight:600;">&#128992; Similar</span><br><span style="font-size:.68rem;color:#e67e22;">Similar to: '+esc(resources[dup.idx].name)+'</span>';
+    } else if(hasWarn){
+      statusHtml='<span style="color:#b07000;">&#9888; '+esc(warnings.join('; '))+'</span>';
+    } else {
+      statusHtml='<span style="color:#2a9d5c;font-weight:600;">&#9989; New</span>';
+    }
     const tr=document.createElement('tr');
-    tr.style.background=hasWarn?'#fffbe6':(i%2===0?'#fff':'#f5faff');
+    tr.style.background=bg;
     tr.innerHTML='<td style="padding:5px 8px;color:var(--gray-400);">'+rowNum+'</td>'+
       '<td style="padding:5px 8px;font-weight:600;color:var(--unc-navy);">'+esc(r.name)+'</td>'+
       '<td style="padding:5px 8px;">'+esc(r.category)+'</td>'+
       '<td style="padding:5px 8px;">'+esc(r.county)+'</td>'+
       '<td style="padding:5px 8px;">'+esc(r.phone)+'</td>'+
-      '<td style="padding:5px 8px;color:#b07000;" title="'+esc(warnings.join('; '))+'">'+(hasWarn?'⚠ '+warnings.join('; '):'')+'</td>';
+      '<td style="padding:5px 8px;font-size:.72rem;">'+statusHtml+'</td>';
     tbody.appendChild(tr);
   });
   document.getElementById('bulkPreviewWrap').style.display='';
   document.getElementById('bulkImportBtn').style.display='';
-  document.getElementById('bulkFooterNote').textContent='Review the preview above, then click Import All to add these resources.';
+  const newBtn=document.getElementById('bulkImportNewBtn');
+  newBtn.style.display=dupCount>0?'':'none';
+  const newCount=bulkParsed.length-dupCount;
+  let note='';
+  if(dupCount===0){
+    note='&#9989; No duplicates found — all '+bulkParsed.length+' resources are new.';
+  } else {
+    note='&#128308; '+dupCount+' duplicate'+(dupCount!==1?'s':'')+' found, '+newCount+' new. Use "Import New Only" to skip duplicates, or "Import All" to add everything.';
+  }
+  document.getElementById('bulkFooterNote').innerHTML='<span style="font-size:.74rem;color:var(--gray-600);">'+note+'</span>';
 }
 
 // ── IMPORT ────────────────────────────────────────────────────────────────────
-function importBulkResources(){
+function importBulkResources(newOnly){
   if(!bulkParsed.length)return;
-  let added=0, skipped=0;
-  bulkParsed.forEach(({r})=>{
+  let added=0,skipped=0,dupsSkipped=0;
+  bulkParsed.forEach(({r,duplicate})=>{
     if(!r.name){skipped++;return;}
+    if(newOnly&&duplicate){dupsSkipped++;return;}
     resources.push(r);added++;
   });
   saveToStorage();
   closeModal();
   buildDropdowns();buildCategoryChips();renderAll();
-  showToast('✅ Imported '+added+' resource'+(added!==1?'s':'')+(skipped?' ('+skipped+' skipped)':'')+'!');
+  let msg='&#9989; Imported '+added+' resource'+(added!==1?'s':'');
+  if(dupsSkipped) msg+=' ('+dupsSkipped+' duplicate'+(dupsSkipped!==1?'s':'')+' skipped)';
+  if(skipped) msg+=' ('+skipped+' blank rows skipped)';
+  msg+='!';
+  showToast(msg);
 }
 
 // ── XLSX TEMPLATE DOWNLOAD ────────────────────────────────────────────────────
