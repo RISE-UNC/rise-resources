@@ -219,6 +219,17 @@ header{background:var(--unc-navy);color:#fff}
 .cat-mgr-merge-targets{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
 .merge-target-btn{padding:3px 10px;font-size:.74rem;border-radius:12px;border:1.5px solid var(--gray-200);background:#fff;cursor:pointer;font-family:Inter,sans-serif;transition:all .12s}
 .merge-target-btn:hover{border-color:var(--unc-blue);background:var(--unc-blue-pale);color:var(--unc-blue)}
+
+/* ── Category resource preview tooltip ── */
+.cat-mgr-row{position:relative}
+.cat-preview-btn{background:none;border:1.5px solid var(--gray-200);border-radius:5px;padding:2px 7px;font-size:.7rem;color:var(--gray-600);cursor:pointer;font-family:Inter,sans-serif;white-space:nowrap;transition:all .12s}
+.cat-preview-btn:hover{border-color:var(--unc-blue);color:var(--unc-blue)}
+.cat-tooltip{position:absolute;left:0;top:100%;z-index:999;background:#fff;border:1.5px solid var(--gray-200);border-radius:9px;box-shadow:0 8px 28px rgba(19,41,75,.18);padding:12px 14px;min-width:280px;max-width:340px;display:none;font-size:.76rem;color:var(--text)}
+.cat-tooltip.visible{display:block}
+.cat-tooltip-title{font-weight:700;color:var(--unc-navy);margin-bottom:7px;font-size:.78rem;border-bottom:1.5px solid var(--gray-200);padding-bottom:5px}
+.cat-tooltip-item{padding:3px 0;border-bottom:1px solid var(--gray-200);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text)}
+.cat-tooltip-item:last-child{border-bottom:none}
+.cat-tooltip-more{font-size:.7rem;color:var(--gray-400);margin-top:5px;font-style:italic}
 </style>
 </head>
 <body>
@@ -569,14 +580,19 @@ const DEFAULT_CAT_COLORS = {
 const DEFAULT_CAT_ORDER = ['Food','Housing/Furniture','Transportation','Utilities','Interpersonal/DV','Caregiving/Family','Medical','Mental/Substance Use','Eye Care','Dental'];
 // Dynamic — loaded from storage, updated when new categories are added
 let CAT_COLORS = JSON.parse(localStorage.getItem('riseCategories')||'null') || Object.assign({}, DEFAULT_CAT_COLORS);
+// Track which original (default) categories have been deliberately deleted
+let DELETED_DEFAULTS = new Set(JSON.parse(localStorage.getItem('riseDeletedDefaults')||'[]'));
+function saveDeletedDefaults(){ localStorage.setItem('riseDeletedDefaults', JSON.stringify([...DELETED_DEFAULTS])); }
 function getCatOrder(){
-  // All known categories: defaults first, then any custom ones
-  const all = new Set(DEFAULT_CAT_ORDER);
+  // Start with default categories that haven't been deleted
+  const all = new Set(DEFAULT_CAT_ORDER.filter(c=>!DELETED_DEFAULTS.has(c)));
+  // Add any categories still in use by resources
   resources.forEach(r=>{
     const cats = Array.isArray(r.categories) ? r.categories : (r.category ? [r.category] : []);
-    cats.forEach(c=>all.add(c));
+    cats.forEach(c=>{ if(!DELETED_DEFAULTS.has(c)) all.add(c); });
   });
-  Object.keys(CAT_COLORS).forEach(c=>all.add(c));
+  // Add custom categories from CAT_COLORS (non-defaults that were created)
+  Object.keys(CAT_COLORS).forEach(c=>{ if(!DELETED_DEFAULTS.has(c)) all.add(c); });
   // Return defaults in order, then extras alphabetically
   const extras = [...all].filter(c=>!DEFAULT_CAT_ORDER.includes(c)).sort();
   return [...DEFAULT_CAT_ORDER.filter(c=>all.has(c)), ...extras];
@@ -707,6 +723,10 @@ function toggleDropdown(panelId,btnId){
   if(!isOpen){panel.classList.add('open');document.getElementById(btnId).classList.add('open');}
 }
 document.addEventListener('click',e=>{
+  // Close category preview tooltips when clicking outside
+  if(!e.target.closest('.cat-mgr-row')){
+    document.querySelectorAll('.cat-tooltip.visible').forEach(el=>el.classList.remove('visible'));
+  }
   if(!e.target.closest('.filter-group')){
     document.querySelectorAll('.dropdown-panel').forEach(p=>p.classList.remove('open'));
     document.querySelectorAll('.multi-select-btn').forEach(b=>b.classList.remove('open'));
@@ -1398,6 +1418,11 @@ function applyRename(oldCat, newCat){
   // Transfer color
   CAT_COLORS[newCat]=CAT_COLORS[oldCat]||getCatColor(newCat);
   delete CAT_COLORS[oldCat];
+  // If renaming a default, mark old name as deleted so it doesn't resurface
+  if(DEFAULT_CAT_ORDER.includes(oldCat)){
+    DELETED_DEFAULTS.add(oldCat);
+    saveDeletedDefaults();
+  }
   saveCategories();
   saveToStorage();
   buildDropdowns();buildCategoryChips();renderAll();
@@ -1414,12 +1439,16 @@ function applyMergeCategory(fromCat, toCat){
     const idx=cats.indexOf(fromCat);
     if(idx!==-1){
       cats[idx]=toCat;
-      // Deduplicate
       r.categories=[...new Set(cats)];
       delete r.category;
     }
   });
   delete CAT_COLORS[fromCat];
+  // If merging a default category away, mark it as deleted so it doesn't resurface
+  if(DEFAULT_CAT_ORDER.includes(fromCat)){
+    DELETED_DEFAULTS.add(fromCat);
+    saveDeletedDefaults();
+  }
   saveCategories();
   saveToStorage();
   buildDropdowns();buildCategoryChips();renderAll();
@@ -1429,14 +1458,24 @@ function applyMergeCategory(fromCat, toCat){
 
 // Delete a category (removes it from all resources)
 function deleteCategory(cat){
-  if(!confirm('Delete category "'+cat+'"?\n\nThis will remove it from all resources. Resources with only this category will become uncategorized.')) return;
+  const count = resources.filter(r=>getResCats(r).includes(cat)).length;
+  const msg = 'Delete category "'+cat+'"?' +
+    (count > 0 ? ' This will remove it from '+count+' resource'+(count!==1?'s':'')+'. Those resources will keep their other categories.' : '');
+  if(!confirm(msg)) return;
+  // Remove from all resources
   resources.forEach(r=>{
     if(Array.isArray(r.categories)){
       r.categories=r.categories.filter(c=>c!==cat);
     } else if(r.category===cat){ r.categories=[]; delete r.category; }
   });
+  // Remove color entry
   delete CAT_COLORS[cat];
   saveCategories();
+  // If it was a default category, track it as deleted so getCatOrder doesn't revive it
+  if(DEFAULT_CAT_ORDER.includes(cat)){
+    DELETED_DEFAULTS.add(cat);
+    saveDeletedDefaults();
+  }
   saveToStorage();
   buildDropdowns();buildCategoryChips();renderAll();
   buildCatEditorList();
@@ -1479,6 +1518,11 @@ function buildCatEditorList(){
     const info = document.createElement('div');
     info.className = 'cat-mgr-info';
     info.innerHTML = '<div class="cat-mgr-name">'+esc(cat)+'</div><div class="cat-mgr-count">'+count+' resource'+(count!==1?'s':'')+'</div>';
+    // Tooltip preview
+    const tooltip = document.createElement('div');
+    tooltip.className = 'cat-tooltip';
+    tooltip.id = 'ctt-'+encodeKey(cat);
+    info.appendChild(tooltip);
 
     const btns = document.createElement('div');
     btns.className = 'cat-mgr-btns';
@@ -1505,6 +1549,25 @@ function buildCatEditorList(){
     row.appendChild(swatch);
     row.appendChild(info);
     row.appendChild(btns);
+    // Preview button — shows resource list on click/hover
+    const previewBtn = document.createElement('button');
+    previewBtn.className = 'cat-preview-btn';
+    previewBtn.innerHTML = '&#128065; Preview';
+    previewBtn.title = 'Show resources in this category';
+    previewBtn.onclick = (function(c, t){ return function(e){
+      e.stopPropagation();
+      // Build tooltip content
+      const resInCat = resources.filter(r=>getResCats(r).includes(c));
+      const MAX = 12;
+      t.innerHTML = '<div class="cat-tooltip-title">'+esc(c)+' ('+resInCat.length+' resource'+(resInCat.length!==1?'s':'')+')</div>'+
+        resInCat.slice(0,MAX).map(r=>'<div class="cat-tooltip-item">'+esc(r.name)+(r.county?'<span style="color:var(--gray-400);"> · '+esc(r.county)+'</span>':'')+'</div>').join('')+
+        (resInCat.length>MAX ? '<div class="cat-tooltip-more">…and '+(resInCat.length-MAX)+' more</div>' : '');
+      const isOpen = t.classList.contains('visible');
+      // Close all tooltips
+      document.querySelectorAll('.cat-tooltip.visible').forEach(el=>el.classList.remove('visible'));
+      if(!isOpen) t.classList.add('visible');
+    }; })(cat, tooltip);
+    btns.insertBefore(previewBtn, btns.firstChild);
     list.appendChild(row);
 
     // Inline action panel (hidden by default)
